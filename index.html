@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>DewePOS Platform - Manajemen Toko Modern</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Style tambahan untuk header agar info toko rapi */
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .store-header-info {
+      font-size: 11px;
+      line-height: 1.3;
+      margin-left: 5px;
+      color: #4b5563;
+    }
+    .store-header-info .store-name {
+      font-weight: bold;
+      font-size: 13px;
+      color: #1e293b;
+    }
+    @media (max-width: 640px) {
+      .store-header-info {
+        display: none; /* Sembunyikan di mobile agar tidak terlalu penuh */
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<div id="splash">
+  <div class="card">
+    <div class="logo">D</div>
+    <h1>DewePOS Platform</h1>
+    <p class="tagline">Manajemen Toko + Stok + Profit</p>
+    <p class="welcome">Welcome</p>
+    <p class="user" id="splashUser">User</p>
+    <div class="dots"><span></span><span></span><span></span></div>
+    <p class="loading">Loading...</p>
+  </div>
+</div>
+
+<div id="loginPage">
+  <div class="login-container">
+    <div class="logo-large">D</div>
+    <h2>DewePOS Platform</h2>
+    <input type="text" id="loginUsername" placeholder="Username" autocomplete="off">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <p class="login-info">Demo:<br>Owner: admin / admin<br>Admin: admin2 / admin2<br>Kasir: kasir / kasir</p>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header>
+    <div class="header-left">
+      <button id="menuBtn">☰</button>
+      <h2 id="logoTitle" style="cursor: pointer;">DewePOS Platform</h2>
+      <!-- Informasi Toko di Header (hanya tampil di desktop, di mobile disembunyikan) -->
+      <div class="store-header-info">
+        <div class="store-name">KIOS KI WOKWOK</div>
+        <div class="store-address">JL NEGARA API NO.77 MARS PLANET, BIMA SAKTI</div>
+        <div class="store-phone">Telp: 0812 0813 0814</div>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="datetime">
+        <div class="date" id="currentDate"></div>
+        <div class="time" id="currentTime"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="toggleStoreBtn" class="store-toggle-btn">
+        <span class="store-icon">🔴</span>
+        <span class="store-text">Tutup</span>
+      </button>
+      <div class="user-info">
+        <span id="currentUserRole"></span>
+        <span id="currentUserName"></span>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <ul>
+      <li data-page="beranda">🏠 Beranda</li>
+      <li data-page="transaksi">🛒 Transaksi</li>
+      <li data-page="rekap">📊 Rekap Penjualan</li>
+      <li data-page="pendapatan">💰 Pendapatan & Profit</li>
+      <li data-page="riwayat">📜 Riwayat + Void</li>
+      <li data-page="print">🖨️ Print Laporan</li>
+      <li data-page="pengaturan" class="admin-owner-only">⚙️ Pengaturan</li>
+      <li data-page="manajemenUser" class="admin-owner-only">👥 Manajemen User</li>
+      <li data-page="backup" class="owner-only">💾 Backup & Restore</li>
+    </ul>
+  </aside>
+
+  <main>
+    <!-- BERANDA -->
+    <section id="berandaPage" class="page">
+      <div class="page-header"><h3>🏠 Beranda</h3></div>
+      <div class="beranda-container">
+        <div class="welcome-card"><h4>Selamat Datang, <span id="welcomeUser">User</span>!</h4><p>DewePOS Platform - Manajemen Toko Modern</p></div>
+        <div class="shortcuts-grid">
+          <div class="shortcut-item" data-page="transaksi"><div class="shortcut-icon">🛒</div><span>Transaksi</span></div>
+          <div class="shortcut-item" data-page="rekap"><div class="shortcut-icon">📊</div><span>Rekap</span></div>
+          <div class="shortcut-item" data-page="pendapatan"><div class="shortcut-icon">💰</div><span>Profit</span></div>
+          <div class="shortcut-item" data-page="riwayat"><div class="shortcut-icon">📜</div><span>Riwayat</span></div>
+        </div>
+        <div class="quick-stats">
+          <div class="stat-card"><h5>Transaksi Hari Ini</h5><p id="berandaTransaksiCount">0</p></div>
+          <div class="stat-card"><h5>Pendapatan Hari Ini</h5><p id="berandaPendapatanHariIni">Rp 0</p></div>
+          <div class="stat-card"><h5>Profit Hari Ini</h5><p id="berandaProfitHariIni">Rp 0</p></div>
+        </div>
+        <div class="chart-container"><canvas id="salesChart" width="400" height="200"></canvas></div>
+        <div class="chart-container"><canvas id="profitChart" width="400" height="200"></canvas></div>
+        <div class="low-stock-warning"><h4>⚠️ Stok Menipis (≤ 5)</h4><div id="lowStockList"></div></div>
+        <div class="top-products"><h4>🏆 Top 5 Produk Terlaris</h4><div id="topProductsList"></div></div>
+      </div>
+    </section>
+
+    <!-- TRANSAKSI -->
+    <section id="transaksiPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>🛒 Transaksi</h3></div>
+      <div class="transaksi-wrapper">
+        <div class="transaksi-container">
+          <div class="menu-list">
+            <h4>Pilih Platform</h4>
+            <div id="platformList" class="platform-buttons">
+              <button class="platform-btn" data-platform="Grabfood">Grabfood</button>
+              <button class="platform-btn" data-platform="Gofood">Gofood</button>
+              <button class="platform-btn" data-platform="Shopeefood">Shopeefood</button>
+              <button class="platform-btn" data-platform="TikTok">TikTok</button>
+              <button class="platform-btn" data-platform="Dinein">Dinein</button>
+            </div>
+            <div class="search-menu">
+              <input type="text" id="searchMenuInput" placeholder="🔍 Cari menu cepat...">
+            </div>
+            <h4>Kategori</h4><div id="kategoriList" class="kategori-buttons"></div>
+            <div id="submenuList" style="display:none;"><h4>Sub Menu</h4><div id="submenuButtons"></div></div>
+            <div id="menuListTransaksi" style="display:none;"><h4>Menu</h4><div id="menuItemsTransaksi"></div></div>
+          </div>
+          <div class="cart-container">
+            <div class="cart-header"><h4>🛍️ KERANJANG</h4><span id="cartItemCount">0 item</span><button id="undoCartBtn" style="background:#f59e0b; padding:4px 10px; border:none; border-radius:8px; cursor:pointer;">↩️ Undo</button></div>
+            <ul id="cartList" class="cart-list"></ul>
+            <div class="cart-total">Total Harga: Rp <span id="totalHarga">0</span></div>
+            <div class="auto-discount-info" id="autoDiscountInfo" style="font-size:11px; color:#10b981;"></div>
+            <div class="voucher-section-compact">
+              <div class="voucher-toggle" onclick="toggleVoucherPanel()"><span>🎫 Voucher & Diskon</span><span id="voucherToggleIcon">▼</span></div>
+              <div id="voucherPanel" style="display:none;">
+                <div class="voucher-group"><label>Voucher Platform:</label><div class="voucher-input-group"><select id="voucherPlatformSelect"><option value="0">Pilih</option><option value="5000">Rp5k</option><option value="10000">Rp10k</option><option value="20000">Rp20k</option></select><input type="number" id="voucherPlatformManual" placeholder="Manual" value="0"></div></div>
+                <div class="voucher-group"><label>Voucher Dinein:</label><div class="voucher-input-group"><select id="voucherDineinSelect"><option value="0">Pilih</option><option value="5000">Rp5k</option><option value="10000">Rp10k</option></select><input type="number" id="voucherDineinManual" placeholder="Manual" value="0"></div></div>
+                <div class="voucher-group"><label>Diskon %:</label><div class="voucher-input-group"><select id="diskonPersenSelect"><option value="0">0%</option><option value="5">5%</option><option value="10">10%</option><option value="15">15%</option></select><input type="number" id="diskonPersenManual" placeholder="Manual %" value="0"></div></div>
+                <div class="voucher-group"><label>Diskon Nominal:</label><input type="number" id="diskonNominal" placeholder="Rp" value="0"></div>
+              </div>
+            </div>
+            <div class="total-final"><h4>Total Setelah Diskon: Rp <span id="totalSetelahDiskon">0</span></h4><p id="detailDiskon"></p></div>
+            <button id="previewBayarBtn" class="preview-btn">👁️ Lanjut Pembayaran</button>
+          </div>
+        </div>
+        <div class="last-sales-widget"><h4>📋 Penjualan Terakhir</h4><div id="lastSalesList"></div></div>
+      </div>
+    </section>
+
+    <!-- REKAP PENJUALAN -->
+    <section id="rekapPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>📊 Rekap Penjualan</h3></div>
+      <div class="rekap-filter">
+        <button class="filter-btn active" onclick="filterRekap('harian')">Harian</button>
+        <button class="filter-btn" onclick="filterRekap('mingguan')">Mingguan</button>
+        <button class="filter-btn" onclick="filterRekap('bulanan')">Bulanan</button>
+        <button class="filter-btn" onclick="filterRekap('semua')">Semua</button>
+      </div>
+      <div class="platform-tabs">
+        <button class="platform-tab active" data-platform="all" onclick="filterRekapByPlatform('all')">Semua Platform</button>
+        <button class="platform-tab" data-platform="Grabfood" onclick="filterRekapByPlatform('Grabfood')">Grabfood</button>
+        <button class="platform-tab" data-platform="Gofood" onclick="filterRekapByPlatform('Gofood')">Gofood</button>
+        <button class="platform-tab" data-platform="Shopeefood" onclick="filterRekapByPlatform('Shopeefood')">Shopeefood</button>
+        <button class="platform-tab" data-platform="TikTok" onclick="filterRekapByPlatform('TikTok')">TikTok</button>
+        <button class="platform-tab" data-platform="Dinein" onclick="filterRekapByPlatform('Dinein')">Dinein</button>
+      </div>
+      <div class="kasir-filter">
+        <label>Filter Kasir:</label>
+        <select id="filterKasirRekap"><option value="all">Semua Kasir</option></select>
+      </div>
+      <div class="rekap-summary">
+        <div class="summary-card"><h4>Total Transaksi</h4><p id="rekapTotalTransaksi">0</p></div>
+        <div class="summary-card"><h4>Total Pendapatan</h4><p id="rekapTotalPendapatan">Rp 0</p></div>
+        <div class="summary-card"><h4>Total Profit</h4><p id="rekapTotalProfit">Rp 0</p></div>
+      </div>
+      <div class="rekap-detail"><h4>Detail Penjualan</h4><div id="rekapDetailList"></div></div>
+      <div class="export-buttons">
+        <button id="exportRekapBtn" style="background:#10b981; padding:10px; border:none; border-radius:12px; color:white;">📎 Export Excel</button>
+        <button id="exportRekapPDFBtn" style="background:#ef4444; padding:10px; border:none; border-radius:12px; color:white;">📄 Export PDF</button>
+      </div>
+    </section>
+
+    <!-- PENDAPATAN & PROFIT -->
+    <section id="pendapatanPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>💰 Pendapatan & Profit</h3></div>
+      <div class="date-filter-section">
+        <div class="filter-row">
+          <div class="filter-group"><label>Dari:</label><input type="date" id="pendapatanStartDate"></div>
+          <div class="filter-group"><label>Sampai:</label><input type="date" id="pendapatanEndDate"></div>
+          <div class="filter-group"><label>Periode:</label><select id="pendapatanPeriod"><option value="today">Hari Ini</option><option value="week">7 Hari</option><option value="month">Bulan Ini</option><option value="custom">Custom</option></select></div>
+          <button id="applyPendapatanFilter">Terapkan</button>
+          <button id="resetPendapatanFilter">Reset</button>
+        </div>
+      </div>
+      <div class="platform-tabs">
+        <button class="platform-tab active" data-platform="all" onclick="filterPendapatanByPlatform('all')">Semua</button>
+        <button class="platform-tab" data-platform="Grabfood" onclick="filterPendapatanByPlatform('Grabfood')">Grabfood</button>
+        <button class="platform-tab" data-platform="Gofood" onclick="filterPendapatanByPlatform('Gofood')">Gofood</button>
+        <button class="platform-tab" data-platform="Shopeefood" onclick="filterPendapatanByPlatform('Shopeefood')">Shopeefood</button>
+        <button class="platform-tab" data-platform="TikTok" onclick="filterPendapatanByPlatform('TikTok')">TikTok</button>
+        <button class="platform-tab" data-platform="Dinein" onclick="filterPendapatanByPlatform('Dinein')">Dinein</button>
+      </div>
+      <div class="kasir-filter">
+        <label>Filter Kasir:</label>
+        <select id="filterKasirPendapatan"><option value="all">Semua Kasir</option></select>
+      </div>
+      <div id="paymentMethodSummary" class="payment-method-summary">
+        <h4>💵 Pendapatan per Metode Pembayaran</h4>
+        <div id="paymentMethodSummaryContent" class="payment-method-cards"></div>
+      </div>
+      <div class="pendapatan-summary-platforms" id="pendapatanSummaryPlatforms"></div>
+      <div class="pendapatan-total-card">
+        <div class="total-card-content">
+          <div class="total-label">TOTAL KESELURUHAN</div>
+          <div class="total-amount" id="totalPendapatanSemua">Rp 0</div>
+          <div class="total-transaksi" id="totalTransaksiSemua">0 transaksi</div>
+          <div class="total-profit" id="totalProfitSemua">Profit: Rp 0</div>
+        </div>
+      </div>
+      <div class="pendapatan-detail-section">
+        <h4>📋 Detail Transaksi <span id="selectedPlatformName">Semua Platform</span></h4>
+        <div id="pendapatanDetailList"></div>
+      </div>
+    </section>
+
+    <!-- RIWAYAT -->
+    <section id="riwayatPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>📜 Riwayat Transaksi + Void</h3></div>
+      <div class="riwayat-filter">
+        <input type="text" id="riwayatSearch" placeholder="Cari item / invoice / platform / kasir...">
+        <button id="searchRiwayatBtn">🔍 Cari</button>
+        <button id="resetRiwayatBtn">Reset</button>
+        <select id="filterKasirRiwayat"><option value="all">Semua Kasir</option></select>
+      </div>
+      <div id="riwayatList"></div>
+    </section>
+
+    <!-- PRINT -->
+    <section id="printPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>🖨️ Print Laporan</h3></div>
+      <div class="print-buttons">
+        <button onclick="printLaporan('harian')">Print Harian (Hari Ini)</button>
+        <button onclick="printLaporan('mingguan')">Print Mingguan</button>
+        <button onclick="printLaporan('bulanan')">Print Bulanan</button>
+        <button onclick="showPrintDateFilter()">Print Custom Tanggal</button>
+      </div>
+    </section>
+
+    <!-- PENGATURAN -->
+    <section id="pengaturanPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>⚙️ Pengaturan Menu & Stok</h3></div>
+      <div class="setting-section">
+        <h4>📝 Tambah Menu</h4>
+        <div class="form-group">
+          <input type="text" id="kategori" placeholder="Kategori">
+          <input type="text" id="subMenu" placeholder="Sub Menu">
+          <input type="text" id="namaItem" placeholder="Nama Item">
+          <input type="text" id="variant" placeholder="Variant">
+          <input type="number" id="harga" placeholder="Harga">
+          <input type="number" id="stok" placeholder="Stok">
+          <input type="number" id="modal" placeholder="Harga Modal">
+          <button id="tambahMenuBtn">➕ Tambah Menu</button>
+        </div>
+      </div>
+      <div class="setting-section">
+        <h4>📋 Daftar Menu (Klik Edit)</h4>
+        <div id="menuItems"></div>
+      </div>
+      <div class="setting-section">
+        <h4>💰 Pengaturan Pajak & Diskon Otomatis</h4>
+        <label><input type="checkbox" id="ppnEnabled"> Aktifkan PPN 11%</label>
+        <div class="auto-discount-setting">
+          <label>Diskon Otomatis (min belanja):</label>
+          <input type="number" id="autoDiscountMin" placeholder="Minimum belanja" value="0">
+          <label>Diskon Otomatis (nominal):</label>
+          <input type="number" id="autoDiscountAmount" placeholder="Diskon" value="0">
+        </div>
+      </div>
+      <div class="setting-section">
+        <h4>⏰ Jam Operasional & Print Otomatis</h4>
+        <label>Buka: <input type="time" id="jamBuka" value="08:00"></label>
+        <label>Tutup: <input type="time" id="jamTutup" value="22:00"></label>
+        <button id="simpanJadwalBtn">Simpan Jadwal</button>
+        <label><input type="checkbox" id="autoScheduleCheckbox" checked> Otomatis sesuai jadwal</label>
+        <label><input type="checkbox" id="autoPrintCheckbox"> Auto Print Struk</label>
+        <p id="scheduleInfo"></p>
+      </div>
+      <!-- Bagian Informasi Toko lama di pengaturan sudah dihapus karena dipindahkan ke header -->
+    </section>
+
+        <!-- Manajemen Platform Aktif -->
+<div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+  <h3>📱 Aktifkan Platform Transaksi</h3>
+  <p style="font-size: 12px; color: #666;">Centang platform yang tersedia untuk transaksi (yang tidak dicentang tidak akan muncul di menu transaksi).</p>
+  <div id="platformChecklist" style="display: flex; flex-wrap: wrap; gap: 15px; margin: 15px 0;">
+    <!-- checklist akan diisi javascript -->
+  </div>
+  <button id="saveActivePlatformsBtn" class="btn-save" style="background:#10b981; margin-top:5px;">💾 Simpan Platform Aktif</button>
+  <div id="platformStatusMsg" style="margin-top: 10px; font-size:12px;"></div>
+</div>
+
+    <!-- MANAJEMEN USER -->
+    <section id="manajemenUserPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>👥 Manajemen User & Role</h3></div>
+      <div class="setting-section">
+        <h4>Tambah User Baru</h4>
+        <div class="form-user">
+          <input type="text" id="newUsername" placeholder="Username" autocomplete="off">
+          <input type="password" id="newPassword" placeholder="Password (min. 4 karakter)">
+          <input type="password" id="confirmPassword" placeholder="Konfirmasi Password">
+          <select id="newRole">
+            <option value="kasir">Kasir</option>
+            <option value="admin">Admin</option>
+            <option value="owner">Owner</option>
+          </select>
+          <button id="addUserBtn">➕ Tambah User</button>
+        </div>
+      </div>
+      <div class="setting-section">
+        <h4>Daftar User</h4>
+        <div class="user-search">
+          <input type="text" id="searchUserInput" placeholder="🔍 Cari username...">
+          <button id="exportUserExcelBtn" style="background:#10b981; margin-left:10px;">📎 Export Excel</button>
+        </div>
+        <div id="userList"></div>
+        <div class="pagination" id="userPagination"></div>
+      </div>
+    </section>
+
+    <!-- BACKUP -->
+    <section id="backupPage" class="page" style="display:none;">
+      <div class="page-header"><button class="back-btn" onclick="showPage('beranda')">← Kembali</button><h3>💾 Backup & Restore Data</h3></div>
+      <div class="setting-section">
+        <button id="backupDataBtn">📥 Download Backup (JSON)</button>
+        <button id="restoreDataBtn" style="margin-left:10px;">📂 Restore dari File</button>
+        <input type="file" id="restoreFileInput" style="display:none;" accept=".json">
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL PREVIEW -->
+<div id="previewStrukModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3>🧾 PREVIEW STRUK</h3><span class="close-preview">&times;</span></div>
+    <div id="previewStrukContent" class="struk-content"></div>
+    <div class="payment-method-section">
+      <h4>💳 Metode Pembayaran</h4>
+      <div id="paymentOptionsContainer"></div>
+      <div id="cashInputGroup" style="display:none;"><label>Jumlah Bayar Cash:</label><input type="number" id="jumlahBayar" placeholder="Masukkan uang" value="0"><p id="kembalianText"></p></div>
+      <div id="qrisInfo" style="display:none;"><div class="qris-placeholder"><p>📱 Scan QRIS:</p><div id="qrcode" class="qris-code"></div><div class="qris-text-small">Total: Rp <span id="qrisTotal">0</span></div></div></div>
+    </div>
+    <div class="modal-footer"><button id="backToCartBtn">← Kembali</button><button id="confirmBayarBtn">✅ Bayar & Print Struk</button></div>
+  </div>
+</div>
+
+<!-- MODAL STRUK FINAL -->
+<div id="strukModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3>🧾 STRUK PEMBELIAN</h3><span class="close">&times;</span></div>
+    <div id="strukContent" class="struk-content"></div>
+    <div class="modal-footer"><button id="printStrukBtn">🖨️ Print Struk</button><button id="closeStrukBtn">Tutup</button></div>
+  </div>
+</div>
+
+<!-- MODAL EDIT MENU -->
+<div id="editMenuModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3>Edit Menu</h3><span class="close-edit">&times;</span></div>
+    <div style="padding:20px;">
+      <input type="hidden" id="editMenuId">
+      <label>Nama:</label><input type="text" id="editNama">
+      <label>Kategori:</label><input type="text" id="editKategori">
+      <label>Sub Menu:</label><input type="text" id="editSubMenu">
+      <label>Variant:</label><input type="text" id="editVariant">
+      <label>Harga:</label><input type="number" id="editHarga">
+      <label>Stok:</label><input type="number" id="editStok">
+      <label>Modal:</label><input type="number" id="editModal">
+      <button id="saveEditMenuBtn">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT USER -->
+<div id="editUserModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3>Edit User</h3><span class="close-edit-user">&times;</span></div>
+    <div style="padding:20px;">
+      <input type="hidden" id="editUsername">
+      <label>Password Baru:</label><input type="password" id="editPassword">
+      <label>Role:</label><select id="editRole"><option value="kasir">Kasir</option><option value="admin">Admin</option><option value="owner">Owner</option></select>
+      <button id="saveEditUserBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</body>
+</html>
