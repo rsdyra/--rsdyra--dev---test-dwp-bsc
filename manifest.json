@@ -1,0 +1,13 @@
+{
+  "name": "DewePOS Basic",
+  "short_name": "DewePOS",
+  "start_url": "/pos/",
+  "scope": "/pos/",
+  "display": "standalone",
+  "theme_color": "#4361ee",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "/pos/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pos/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
